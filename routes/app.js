@@ -1,6 +1,7 @@
 var Movie = require("../models/movie");
 var User = require("../models/user");
 var Comment = require("../models/comment");
+var Category = require("../models/category");
 
 var signinRequired = function (req, res, next) {
   var user = req.session.user;
@@ -12,22 +13,30 @@ var signinRequired = function (req, res, next) {
 
 module.exports = function (app) {
   app.get("/", function (req, res) {
-    Movie.fetch(function (err, movies) {
-      if (err) {
-        console.log(err);
-      }
-      res.render("index", {
-        title: "iMovie 首页",
-        movies: movies,
+    Category.find({})
+      .populate({
+        path: "movies",
+        options: {
+          limit: 5,
+        },
+      })
+      .exec(function (err, categories) {
+        if (err) {
+          console.log(err);
+        }
+        res.render("index", {
+          title: "iMovie 首页",
+          categories: categories,
+        });
       });
-    });
   });
 
   app.get("/movie/:id", function (req, res) {
     var id = req.params.id;
     Movie.findById(id, function (err, movie) {
-      Comment.find({movie: id})
+      Comment.find({ movie: id })
         .populate("from", "name")
+        .populate("reply.from reply.to", "name")
         .exec(function (err, comments) {
           res.render("detail", {
             title: "iMovie " + movie.title,
@@ -40,11 +49,11 @@ module.exports = function (app) {
 
   app.post("/user/signup", function (req, res) {
     var _user = req.body.user;
-    User.find({ name: _user.name }, function (err, user) {
+    User.findOne({ name: _user.name }, function (err, user) {
       if (err) {
         console.log(err);
       }
-      if (user.length) {
+      if (user) {
         return res.redirect("/signin");
       } else {
         console.log("haha");
@@ -108,12 +117,29 @@ module.exports = function (app) {
   app.post("/user/comment", signinRequired, function (req, res) {
     var _comment = req.body.comment;
     var movieId = _comment.movie;
-    var comment = new Comment(_comment);
-    comment.save(function (err, comment) {
-      if (err) {
-        console.log(err);
-      }
-      res.redirect("/movie/" + movieId);
-    });
+    if (_comment.cid) {
+      Comment.findById(_comment.cid, function (err, comment) {
+        var reply = {
+          from: _comment.from,
+          to: _comment.tid,
+          content: _comment.content,
+        };
+        comment.reply.push(reply);
+        comment.save(function (err, comment) {
+          if (err) {
+            console.log(err);
+          }
+          res.redirect("/movie/" + movieId);
+        });
+      });
+    } else {
+      var comment = new Comment(_comment);
+      comment.save(function (err, comment) {
+        if (err) {
+          console.log(err);
+        }
+        res.redirect("/movie/" + movieId);
+      });
+    }
   });
 };

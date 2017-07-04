@@ -1,5 +1,6 @@
 var Movie = require("../models/movie");
 var User = require("../models/user");
+var Category = require("../models/category");
 var _ = require("underscore");
 
 var signinRequired = function (req, res, next) {
@@ -19,7 +20,38 @@ var adminRequired = function (req, res, next) {
 };
 
 module.exports = function (app) {
-  app.get("/admin/movie/new", signinRequired, adminRequired, function(req, res) {
+
+  app.get("/admin/category/new", signinRequired, adminRequired, function (req, res) {
+    res.render("category_admin", {
+      title: "iMovie 后台分类录入页",
+      category: {},
+    });
+  });
+
+  app.post("/admin/category/new", signinRequired, adminRequired, function (req, res) {
+    var _category = req.body.category;
+    var category = new Category(_category);
+    category.save(function (err, category) {
+      if (err) {
+        console.log(err);
+      }
+      res.redirect("/admin/category/list");
+    });
+  });
+
+  app.get("/admin/category/list", signinRequired, adminRequired, function (req, res) {
+    Category.fetch(function (err, categories) {
+      if (err) {
+        console.log(err);
+      }
+      res.render("categorylist", {
+        title: "iMovie 分类列表页",
+        categories: categories,
+      });
+    });
+  });
+
+  app.get("/admin/movie/new", signinRequired, adminRequired, function (req, res) {
     res.render("admin", {
       title: "iMovie 后台录入页",
       movie: {
