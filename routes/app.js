@@ -33,6 +33,11 @@ module.exports = function (app) {
 
   app.get("/movie/:id", function (req, res) {
     var id = req.params.id;
+    Movie.update({_id: id}, {$inc: {pv: 1}}, function (err) {
+      if (err) {
+        console.log(err);
+      }
+    });
     Movie.findById(id, function (err, movie) {
       Comment.find({ movie: id })
         .populate("from", "name")
@@ -140,6 +145,53 @@ module.exports = function (app) {
         }
         res.redirect("/movie/" + movieId);
       });
+    }
+  });
+
+  app.get("/results", function (req, res) {
+    var categoryId = req.query.category;
+    var q = req.query.q;
+    var page = parseInt(req.query.page, 10) || 1;
+    var count = 10;
+    var index = (page - 1) * count;
+    if (categoryId) {
+      Category.findOne({ _id: categoryId })
+        .populate({
+          path: "movies",
+          select: "title poster",
+        })
+        .exec(function (err, category) {
+          if (err) {
+            console.log(err);
+          }
+          var movies = category.movies;
+          var results = movies.slice(index, index + count);
+          res.render("results", {
+            title: "iMovie 结果列表页面",
+            keyword: category.name,
+            totalPage: Math.ceil(movies.length / count),
+            currentPage: page,
+            query: "category=" + categoryId,
+            movies: results,
+          });
+        });
+    } else {
+      Movie.find({ title: new RegExp(q + ".*", "i") })
+        .exec(function (err, movies) {
+          if (err) {
+            console.log(err);
+          }
+          console.log(movies);
+          var results = movies.slice(index, index + count);
+          res.render("results", {
+            title: "iMovie 结果列表页面",
+            keyword: q,
+            currentPage: page,
+            query: "q=" + q,
+            totalPage: Math.ceil(movies.length / count),
+            movies: results,
+          });
+        });
     }
   });
 };

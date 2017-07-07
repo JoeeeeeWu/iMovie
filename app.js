@@ -4,6 +4,7 @@ var session = require("express-session");
 var mongoose = require("mongoose");
 var mongoStore = require("connect-mongo")(session);
 var bodyParser = require("body-parser");
+var multipart = require("connect-multiparty");
 var cookieParser = require("cookie-parser");
 var morgan = require("morgan");
 var port = process.env.PORT || 3000;
@@ -17,6 +18,7 @@ app.set("view engine", "pug");
 app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(multipart());
 app.use(cookieParser());
 app.use(session({
   secret: "imovie",

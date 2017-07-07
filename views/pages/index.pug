@@ -4,16 +4,20 @@ block content
   .container
     .row
       each category in categories
-        .panel.panel-primary
+        .panel.panel-default
           .panel-heading
-            h3 #{category.name}
+            h3 
+              a(href="/results?category=" + category._id + "&page=1") #{category.name}
           .panel-body
             if category.movies && category.movies.length
-              each item in movies
+              each item in category.movies
                 .col-md-2
                   .thumbnail
                     a(href="/movie/" + item._id)
-                      img(src=item.poster, alt=item.title)
+                      if item.poster.indexOf("https:") > -1
+                        img(src=item.poster, alt=item.title)
+                      else
+                        img(src="/upload/" + item.poster, alt=item.title)
                     .caption
                       h3 #{item.title}
                       p: a.btn.btn-primary(href="/movie/" + item._id, role="button") 观看预告片
